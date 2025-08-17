@@ -7,7 +7,7 @@ import { Forms } from "@vendetta/ui/components"
 import { findInReactTree } from "@vendetta/utils"
 import { settings } from ".."
 
-import { DeepL, GTranslate } from "../api"
+import { DeepL, GTranslate, GeminiTranslator } from "../api"
 import { showToast } from "@vendetta/ui/toasts"
 import { logger } from "@vendetta"
 
@@ -70,6 +70,15 @@ export default () => before("openLazy", LazyActionSheet, ([component, key, msg])
                         case 1:
                             console.log("Translating with GTranslate: ", originalMessage.content);
                             translate = await GTranslate.translate(originalMessage.content, undefined, target_lang, !isTranslated);
+                            break;
+                        case 2:
+                            console.log("Translating with Gemini: ", originalMessage.content);
+                            const apiKey = settings.gemini_api_key || "";
+                            const model = settings.gemini_model || "gemini-pro";
+                            const prompt = settings.gemini_prompt || "Translate '{text}' to {lang}.";
+                            const gemini = new GeminiTranslator(apiKey, model, prompt);
+                            const geminiText = await gemini.translate(originalMessage.content, target_lang);
+                            translate = { text: geminiText };
                             break;
                     }
 
