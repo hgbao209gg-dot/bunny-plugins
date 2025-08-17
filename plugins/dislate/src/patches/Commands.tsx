@@ -9,7 +9,7 @@ import { findByProps } from "@vendetta/metro"
 import { settings } from ".."
 
 import { DeepLLangs} from "../lang"
-import { DeepL, GTranslate } from "../api"
+import { DeepL, GTranslate, GeminiTranslator } from "../api"
 
 const ClydeUtils = findByProps("sendBotMessage")
 const langOptionsDeepL = Object.entries(DeepLLangs).map(([key, value]) => ({
@@ -60,9 +60,21 @@ export default () => registerCommand({
             var content
             switch(settings.translator) {
                 case 0:
-                    content = await DeepL.translate(text.value, undefined, lang.value)
+                    content = await DeepL.translate(text.value, undefined, lang.value);
+                    break;
                 case 1:
-                    content = await GTranslate.translate(text.value, undefined, lang.value)
+                    content = await GTranslate.translate(text.value, undefined, lang.value);
+                    break;
+                case 2:
+                    const apiKey = settings.gemini_api_key || "";
+                    const model = settings.gemini_model || "gemini-pro";
+                    const prompt = settings.gemini_prompt || "Translate '{text}' to {lang}.";
+                    const gemini = new GeminiTranslator(apiKey, model, prompt);
+                    const geminiText = await gemini.translate(text.value, lang.value);
+                    content = { source_lang: undefined, text: geminiText };
+                    break;
+                default:
+                    content = { source_lang: undefined, text: "No translator selected." };
             }
             return await new Promise((resolve): void => showConfirmationAlert({
                 title: "Are you sure you want to send it?",
