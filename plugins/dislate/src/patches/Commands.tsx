@@ -76,15 +76,17 @@ export default () => registerCommand({
                 default:
                     content = { source_lang: undefined, text: "No translator selected." };
             }
+            // Fix: check content and content.text before use
+            const previewText = content && typeof content.text === "string" ? content.text : "[Translate failed or no result]";
             return await new Promise((resolve): void => showConfirmationAlert({
                 title: "Are you sure you want to send it?",
                 content: (
                     <Codeblock>
-                        {content.text}
+                        {previewText}
                     </Codeblock>
-                    ),
+                ),
                 confirmText: "Yep, send it!",
-                onConfirm: () => resolve({ content: content.text }),
+                onConfirm: () => resolve({ content: previewText }),
                 cancelText: "Nope, don't send it"
             }))
         } catch (e) {
