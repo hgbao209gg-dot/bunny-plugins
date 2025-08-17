@@ -42,28 +42,40 @@ export default () => before("openLazy", LazyActionSheet, ([component, key, msg])
                 message.channel_id,
                 message.id
             )
-            if (!originalMessage?.content && !message.content) return
+            if (!originalMessage?.content && !message.content) return;
 
-            const messageId = originalMessage?.id ?? message.id
-            const messageContent = originalMessage?.content ?? message.content
-            const existingCachedObject = cachedData.find((o: any) => Object.keys(o)[0] === messageId, "cache object")
+            const messageId = originalMessage?.id ?? message.id;
+            const messageContent = originalMessage?.content ?? message.content;
+            const existingCachedObject = cachedData.find((o: any) => Object.keys(o)[0] === messageId, "cache object");
 
-            const translateType = existingCachedObject ? "Revert" : "Translate"
-            const icon = translateType === "Translate" ? getAssetIDByName("LanguageIcon") : getAssetIDByName("ic_highlight")
+            const translateType = existingCachedObject ? "Revert" : "Translate";
+            const icon = translateType === "Translate" ? getAssetIDByName("LanguageIcon") : getAssetIDByName("ic_highlight");
 
             const translate = async () => {
                 try {
-                    const target_lang = settings.target_lang
-                    const isTranslated = translateType === "Translate"
+                    const target_lang = settings.target_lang;
+                    const isTranslated = translateType === "Translate";
 
-                    var translate
+                    if (!originalMessage?.content) {
+                        showToast("Không có nội dung để dịch!", getAssetIDByName("Small"));
+                        return;
+                    }
+
+                    var translate;
                     switch(settings.translator) {
                         case 0:
-                            console.log("Translating with DeepL: ", originalMessage.content)
-                            translate = await DeepL.translate(originalMessage.content, undefined, target_lang, !isTranslated)
+                            console.log("Translating with DeepL: ", originalMessage.content);
+                            translate = await DeepL.translate(originalMessage.content, undefined, target_lang, !isTranslated);
+                            break;
                         case 1:
-                            console.log("Translating with GTranslate: ", originalMessage.content)
-                            translate = await GTranslate.translate(originalMessage.content, undefined, target_lang, !isTranslated)
+                            console.log("Translating with GTranslate: ", originalMessage.content);
+                            translate = await GTranslate.translate(originalMessage.content, undefined, target_lang, !isTranslated);
+                            break;
+                    }
+
+                    if (!translate || typeof translate.text !== "string" || !translate.text.trim()) {
+                        showToast("Dịch thất bại hoặc không có kết quả!", getAssetIDByName("Small"));
+                        return;
                     }
 
                     FluxDispatcher.dispatch({
@@ -79,11 +91,11 @@ export default () => before("openLazy", LazyActionSheet, ([component, key, msg])
                         },
                         log_edit: false,
                         otherPluginBypass: true // antied
-                    })
+                    });
 
                     isTranslated
                         ? cachedData.unshift({ [messageId]: messageContent })
-                        : cachedData = cachedData.filter((e: any) => e !== existingCachedObject, "cached data override")
+                        : cachedData = cachedData.filter((e: any) => e !== existingCachedObject, "cached data override");
                 } catch (e) {
                     showToast("Failed to translate message. Please check Debug Logs for more info.", getAssetIDByName("Small"))
                     logger.error(e)

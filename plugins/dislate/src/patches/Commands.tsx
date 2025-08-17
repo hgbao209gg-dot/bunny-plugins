@@ -55,9 +55,9 @@ export default () => registerCommand({
         }
     ],
     async execute(args, ctx) {
-        const [text, lang] = args
+        const [text, lang] = args;
         try {
-            var content
+            let content;
             switch(settings.translator) {
                 case 0:
                     content = await DeepL.translate(text.value, undefined, lang.value);
@@ -76,22 +76,25 @@ export default () => registerCommand({
                 default:
                     content = { source_lang: undefined, text: "No translator selected." };
             }
-            // Fix: check content and content.text before use
-            const previewText = content && typeof content.text === "string" ? content.text : "[Translate failed or no result]";
+            // Fix: đảm bảo content và content.text luôn tồn tại, nếu không thì báo lỗi rõ ràng
+            if (!content || typeof content.text !== "string" || !content.text.trim()) {
+                showToast("Dịch thất bại hoặc không có kết quả!", getAssetIDByName("Small"));
+                return ClydeUtils.sendBotMessage(ctx.channel.id, "Dịch thất bại hoặc không có kết quả!");
+            }
             return await new Promise((resolve): void => showConfirmationAlert({
                 title: "Are you sure you want to send it?",
                 content: (
                     <Codeblock>
-                        {previewText}
+                        {content.text}
                     </Codeblock>
                 ),
                 confirmText: "Yep, send it!",
-                onConfirm: () => resolve({ content: previewText }),
+                onConfirm: () => resolve({ content: content.text }),
                 cancelText: "Nope, don't send it"
-            }))
+            }));
         } catch (e) {
-            logger.error(e)
-            return ClydeUtils.sendBotMessage(ctx.channel.id, "Failed to translate message. Please check Debug Logs for more info.")
+            logger.error(e);
+            return ClydeUtils.sendBotMessage(ctx.channel.id, "Failed to translate message. Please check Debug Logs for more info.");
         }
     }
 })
